@@ -488,6 +488,38 @@ def compute_click_derived(row):
         r[f'{code}_click_rate']   = _div(clickers, participants)
     return r
 
+# ─── Query task group click detail ───────────────────────────────────────────
+
+QUERY_TASK_GROUP = """
+with a as
+    (select client_id, group_name, min(start_date) start_date, max(end_date) end_date, award_period
+    from rebate_user_task_detail
+    where award_period >= '20260509'
+    group by all)
+, b as
+    (select *,
+        (select min(to_timestamp(nullif(first_deposit_time, 0)/1000)) from crm_customer_base where client_id = a.client_id) first_deposit_time,
+        (select count(*) from smart_reward_client_event where user_id = a.client_id and week_group = award_period) click_c
+    from a)
+
+select award_period, group_name,
+    count(distinct case when first_deposit_time between start_date and end_date then client_id end) active_this_week,
+    count(distinct case when first_deposit_time between start_date and end_date and click_c > 0 then client_id end) active_click_this_week_user,
+    sum(case when first_deposit_time between start_date and end_date then click_c end) active_click_this_week_count,
+    count(distinct case when first_deposit_time not between start_date and end_date then client_id end) non_active_this_week,
+    count(distinct case when first_deposit_time not between start_date and end_date and click_c > 0 then client_id end) non_active_click_this_week_user,
+    sum(case when first_deposit_time not between start_date and end_date then click_c end) non_active_click_this_week_count
+from b
+group by all
+order by 1, 2
+"""
+
+def compute_task_group_derived(row):
+    r = dict(row)
+    r['active_click_rate']     = _div(r.get('active_click_this_week_user'),     r.get('active_this_week'))
+    r['non_active_click_rate'] = _div(r.get('non_active_click_this_week_user'), r.get('non_active_this_week'))
+    return r
+
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -522,6 +554,14 @@ def main():
         with open(out_dir / 'data_raw_click.json', 'w') as f:
             json.dump(data_click, f, default=str)
         print(f'Exported {len(data_click)} rows → data/data_raw_click.json')
+
+        cur.execute(QUERY_TASK_GROUP)
+        columns = [col[0].lower() for col in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+        data_tg = [compute_task_group_derived(row) for row in rows]
+        with open(out_dir / 'task_group_click.json', 'w') as f:
+            json.dump(data_tg, f, default=str)
+        print(f'Exported {len(data_tg)} rows → data/task_group_click.json')
 
     finally:
         conn.close()

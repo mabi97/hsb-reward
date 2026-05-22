@@ -244,7 +244,8 @@
       min-width: 76px;
       color: var(--text);
     }
-    #clickTable td.val {
+    #clickTable td.val,
+    #tgTable td.val {
       width: 80px;
       min-width: 80px;
       max-width: 80px;
@@ -279,8 +280,39 @@
       z-index: 20 !important;
     }
 
+    /* ── Task Group table sticky cols ── */
+    #tgTable td.tg-name {
+      background: var(--dark);
+      color: rgba(255,255,255,0.9);
+      font-weight: 700;
+      font-size: 12px;
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      min-width: 140px;
+      padding-left: 16px;
+      border-right: 2px solid var(--gold) !important;
+    }
+    #tgTable td.tg-group {
+      background: #FAFBFC;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      position: sticky;
+      left: 140px;
+      z-index: 10;
+      min-width: 160px;
+      border-right: 2px solid var(--border) !important;
+    }
+    #tgTable thead th.sub-metric {
+      left: auto !important;
+      position: sticky !important;
+      top: 0;
+      z-index: 20 !important;
+    }
+
     /* ── Loading / error ── */
-    #status, #statusClick {
+    #status, #statusClick, #statusTG {
       padding: 48px;
       text-align: center;
       color: var(--muted);
@@ -343,6 +375,22 @@
         <tr id="clickTheadSub"></tr>
       </thead>
       <tbody id="clickTableBody"></tbody>
+    </table>
+  </div>
+
+  <p class="section-label" style="margin-top:32px">Task Group Click Rate</p>
+
+  <div class="table-wrapper">
+    <div id="statusTG">Loading data…</div>
+    <table id="tgTable" style="display:none">
+      <thead>
+        <tr id="tgTheadPeriod">
+          <th rowspan="2" style="min-width:140px;text-align:left;position:sticky;left:0;z-index:30">Task Group</th>
+          <th rowspan="2" style="min-width:160px;position:sticky;left:140px;z-index:30">Group</th>
+        </tr>
+        <tr id="tgTheadSub"></tr>
+      </thead>
+      <tbody id="tgTableBody"></tbody>
     </table>
   </div>
 </main>
@@ -736,29 +784,117 @@ function renderClick(data, weeks) {
 }
 
 // ─────────────────────────────────────────────
+// Task Group Click Rate table
+// ─────────────────────────────────────────────
+function renderTaskGroup(data, weeks) {
+  let periods = [...new Set(data.map(r => String(r.award_period)))].sort();
+  if (weeks > 0) periods = periods.slice(-weeks);
+
+  const groups = [...new Set(data.map(r => r.group_name))].sort();
+
+  // Build lookup: period|group_name → row
+  const map = {};
+  data.forEach(r => { map[`${r.award_period}|${r.group_name}`] = r; });
+
+  function getVal(period, groupName, field) {
+    const r = map[`${period}|${groupName}`];
+    return r ? (r[field] ?? null) : null;
+  }
+
+  // Period header row
+  const periodRow = document.getElementById('tgTheadPeriod');
+  while (periodRow.children.length > 2) periodRow.removeChild(periodRow.lastChild);
+  periods.forEach(p => {
+    const th = document.createElement('th');
+    th.textContent = fmtPeriod(p);
+    th.colSpan = 4;
+    th.classList.add('sub-period');
+    periodRow.appendChild(th);
+  });
+
+  // Sub-header row
+  const subRow = document.getElementById('tgTheadSub');
+  subRow.innerHTML = '';
+  periods.forEach(() => {
+    ['Participants', 'Click Rate', 'Clickers', 'Clicks'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      th.classList.add('sub-metric');
+      subRow.appendChild(th);
+    });
+  });
+
+  const tbody = document.getElementById('tgTableBody');
+  tbody.innerHTML = '';
+
+  const SUB_ROWS = [
+    { label: 'Activated This Week',     partField: 'active_this_week',     rateField: 'active_click_rate',     clickersField: 'active_click_this_week_user',     clicksField: 'active_click_this_week_count' },
+    { label: 'Activated Not This Week', partField: 'non_active_this_week', rateField: 'non_active_click_rate', clickersField: 'non_active_click_this_week_user', clicksField: 'non_active_click_this_week_count' },
+  ];
+
+  groups.forEach((groupName, gi) => {
+    SUB_ROWS.forEach((sub, si) => {
+      const tr = document.createElement('tr');
+      if (gi > 0 && si === 0) tr.classList.add('sep-top');
+
+      // Task group name cell (rowspan=2)
+      if (si === 0) tr.appendChild(td('tg-name', groupName, 2));
+
+      // Group type cell
+      tr.appendChild(td('tg-group', sub.label));
+
+      // Value cells
+      periods.forEach(p => {
+        const part     = getVal(p, groupName, sub.partField);
+        const rate     = getVal(p, groupName, sub.rateField);
+        const clickers = getVal(p, groupName, sub.clickersField);
+        const clicks   = getVal(p, groupName, sub.clicksField);
+
+        const { text: rateText } = fmtVal(rate, 'pct');
+        tr.appendChild(td('val', part    != null ? String(part)    : '—'));
+        tr.appendChild(td('val', rateText));
+        tr.appendChild(td('val', clickers != null ? String(clickers) : '—'));
+        tr.appendChild(td('val', clicks   != null ? String(clicks)   : '—'));
+      });
+
+      tbody.appendChild(tr);
+    });
+  });
+
+  document.getElementById('statusTG').style.display = 'none';
+  document.getElementById('tgTable').style.display = '';
+}
+
+// ─────────────────────────────────────────────
 // Load & init
 // ─────────────────────────────────────────────
 let allData = [];
 let allClickData = [];
+let allTGData = [];
 
 async function loadData() {
   const weeks = +document.getElementById('weeksSelect').value;
   try {
-    const [res1, res2] = await Promise.all([
+    const [res1, res2, res3] = await Promise.all([
       fetch('data/data_raw.json'),
       fetch('data/data_raw_click.json'),
+      fetch('data/task_group_click.json'),
     ]);
     if (!res1.ok) throw new Error(`data_raw: HTTP ${res1.status}`);
     if (!res2.ok) throw new Error(`data_raw_click: HTTP ${res2.status}`);
+    if (!res3.ok) throw new Error(`task_group_click: HTTP ${res3.status}`);
     allData      = await res1.json();
     allClickData = await res2.json();
+    allTGData    = await res3.json();
     render(allData, weeks);
     renderClick(allClickData, weeks);
+    renderTaskGroup(allTGData, weeks);
     document.getElementById('lastUpdated').textContent =
       `Last updated: ${fmtPeriod([...new Set(allData.map(r => String(r.period)))].sort().pop())}`;
   } catch (e) {
     document.getElementById('status').textContent = 'Failed to load data: ' + e.message;
     document.getElementById('statusClick').textContent = 'Failed to load data: ' + e.message;
+    document.getElementById('statusTG').textContent = 'Failed to load data: ' + e.message;
   }
 }
 
@@ -766,6 +902,7 @@ document.getElementById('weeksSelect').addEventListener('change', function() {
   const weeks = +this.value;
   if (allData.length)      render(allData, weeks);
   if (allClickData.length) renderClick(allClickData, weeks);
+  if (allTGData.length)    renderTaskGroup(allTGData, weeks);
 });
 
 loadData();

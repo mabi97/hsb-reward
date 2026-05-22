@@ -41,6 +41,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-          git add data/data_raw.json data/data_raw_click.json
+          git add data/data_raw.json data/data_raw_click.json data/task_group_click.json
           git diff --cached --quiet || git commit -m "chore: update data [$(date +'%Y-%m-%d')]"
           git push
