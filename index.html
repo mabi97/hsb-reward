@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSB Reward Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:       #F5A623;
+      --gold-dark:  #D4881A;
+      --green:      #00A651;
+      --red:        #E53935;
+      --bg:         #F8F9FA;
+      --surface:    #FFFFFF;
+      --dark:       #1A1D2E;
+      --border:     #E2E6EA;
+      --text:       #1A1A1A;
+      --muted:      #6C757D;
+      --inv:        #FFFFFF;
+      --stripe:     #F8F9FA;
+      --hover:      #FFF8E7;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--dark);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      border-bottom: 3px solid var(--gold);
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--inv);
+      letter-spacing: -0.5px;
+    }
+    .header-logo span { color: var(--gold); }
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.2);
+    }
+    .header-subtitle {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.6);
+    }
+    .last-updated {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+
+    /* ── Main ── */
+    main {
+      padding: 24px 32px;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      width: fit-content;
+    }
+    .toolbar label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .toolbar select {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 5px 28px 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236C757D'/%3E%3C/svg%3E") no-repeat right 10px center;
+      appearance: none;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .toolbar select:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 18px;
+      background: var(--gold);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Table wrapper ── */
+    .table-wrapper {
+      background: var(--surface);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    /* ── Table header ── */
+    thead th {
+      background: var(--dark);
+      color: var(--inv);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      padding: 10px 12px;
+      text-align: center;
+      white-space: nowrap;
+      border-right: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 2px solid var(--gold);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    /* Sticky structure columns */
+    thead th:nth-child(1) { position: sticky; left: 0;    z-index: 30; min-width: 120px; text-align: left; padding-left: 16px; }
+    thead th:nth-child(2) { position: sticky; left: 120px; z-index: 30; min-width: 150px; text-align: left; }
+    thead th:nth-child(3) { position: sticky; left: 270px; z-index: 30; min-width: 190px; text-align: left; }
+    thead th:nth-child(4) { position: sticky; left: 460px; z-index: 30; min-width: 72px; }
+
+    /* ── Body cells ── */
+    td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 12px;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    /* Alternating rows on value cells */
+    tr:nth-child(even) td.val { background: var(--stripe); }
+
+    /* Hover */
+    tr:hover td.val { background: var(--hover) !important; }
+
+    /* ── Structure columns ── */
+    td.c-section {
+      background: var(--dark);
+      color: rgba(255,255,255,0.9);
+      font-weight: 700;
+      font-size: 11px;
+      text-align: center;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      white-space: pre-line;
+      line-height: 1.5;
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      min-width: 120px;
+      padding-left: 16px;
+      border-right: 2px solid var(--gold) !important;
+    }
+    td.c-metric {
+      background: #F0F2F8;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--dark);
+      white-space: pre-line;
+      line-height: 1.4;
+      position: sticky;
+      left: 120px;
+      z-index: 10;
+      min-width: 150px;
+      border-right: 1px solid #C8CEDA !important;
+    }
+    td.c-comp {
+      background: var(--surface);
+      font-size: 12px;
+      color: var(--text);
+      position: sticky;
+      left: 270px;
+      z-index: 10;
+      min-width: 190px;
+      border-right: 1px solid var(--border) !important;
+    }
+    td.c-group {
+      background: #FAFBFC;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      position: sticky;
+      left: 460px;
+      z-index: 10;
+      min-width: 72px;
+      border-right: 2px solid var(--border) !important;
+    }
+
+    /* ── Value cells ── */
+    td.val {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      min-width: 76px;
+      color: var(--text);
+    }
+    #clickTable td.val {
+      width: 80px;
+      min-width: 80px;
+      max-width: 80px;
+    }
+
+    /* ── Section / metric separators ── */
+    tr.sep-top td   { border-top: 2px solid var(--gold) !important; }
+    tr.metric-top td { border-top: 1px dashed #D0D4E0 !important; }
+
+    /* ── Click table sub-header ── */
+    thead th.sub-period {
+      font-size: 11px;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: #232741;
+    }
+    thead th.sub-metric {
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+      color: rgba(255,255,255,0.65);
+      padding: 5px 8px;
+      background: #1E2138;
+      width: 80px;
+      min-width: 80px;
+      max-width: 80px;
+      border-bottom: 2px solid var(--gold);
+      position: sticky !important;
+      left: auto !important;
+      top: 0;
+      z-index: 20 !important;
+    }
+
+    /* ── Loading / error ── */
+    #status, #statusClick {
+      padding: 48px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-logo">HSB <span>Reward</span></div>
+    <div class="header-divider"></div>
+    <div class="header-subtitle">Performance Dashboard</div>
+  </div>
+  <span class="last-updated" id="lastUpdated">—</span>
+</header>
+
+<main>
+  <div class="toolbar">
+    <label for="weeksSelect">Show last</label>
+    <select id="weeksSelect">
+      <option value="8" selected>8 weeks</option>
+      <option value="12">12 weeks</option>
+      <option value="20">20 weeks</option>
+      <option value="0">All</option>
+    </select>
+    <label>weeks</label>
+  </div>
+
+  <p class="section-label">Dynamic Rebate — Weekly Performance</p>
+
+  <div class="table-wrapper">
+    <div id="status">Loading data…</div>
+    <table id="rebateTable" style="display:none">
+      <thead>
+        <tr id="theadRow">
+          <th>Major Indicator</th>
+          <th>Core Indicator</th>
+          <th>Comparison Dimension</th>
+          <th>Group</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <p class="section-label" style="margin-top:32px">Dynamic Rebate Click — Weekly Click Analysis</p>
+
+  <div class="table-wrapper">
+    <div id="statusClick">Loading data…</div>
+    <table id="clickTable" style="display:none">
+      <thead>
+        <tr id="clickTheadPeriod">
+          <th rowspan="2">Major Indicator</th>
+          <th rowspan="2">Core Indicator</th>
+          <th rowspan="2">Comparison Dimension</th>
+          <th rowspan="2">Group</th>
+        </tr>
+        <tr id="clickTheadSub"></tr>
+      </thead>
+      <tbody id="clickTableBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// ─────────────────────────────────────────────
+// Table structure definition
+// ─────────────────────────────────────────────
+const TABLE_DEF = [
+  {
+    section: 'I.\nRetention\nRate (%)',
+    metrics: [
+      {
+        label: 'Trading\nRetention Rate',
+        comparisons: [
+          { label: 'Task-Assigned Group', rows: [
+            { group: 'New', code: 'A1', field: 'a1', ct: 'New customer', fmt: 'pct' },
+            { group: 'Old', code: 'A1', field: 'a1', ct: 'Old Customer', fmt: 'pct' },
+          ]},
+          { label: 'Non-Task Group', rows: [
+            { group: 'New', code: 'A2', field: 'a2', ct: 'New customer', fmt: 'pct' },
+            { group: 'Old', code: 'A2', field: 'a2', ct: 'Old Customer', fmt: 'pct' },
+          ]},
+        ]
+      },
+      {
+        label: 'Deposit\nRetention Rate',
+        comparisons: [
+          { label: 'Task-Assigned Group', rows: [
+            { group: 'New', code: 'A3', field: 'a3', ct: 'New customer', fmt: 'pct' },
+            { group: 'Old', code: 'A3', field: 'a3', ct: 'Old Customer', fmt: 'pct' },
+          ]},
+          { label: 'Non-Task Group', rows: [
+            { group: 'New', code: 'A4', field: 'a4', ct: 'New customer', fmt: 'pct' },
+            { group: 'Old', code: 'A4', field: 'a4', ct: 'Old Customer', fmt: 'pct' },
+          ]},
+        ]
+      },
+    ]
+  },
+  {
+    section: 'II.\nGrowth\nRate (%)',
+    metrics: [
+      {
+        label: 'Trading\nGrowth Rate',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: 'New', code: 'B1', field: 'b1', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B1', field: 'b1', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: 'New', code: 'B2', field: 'b2', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B2', field: 'b2', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: 'New', code: 'B3', field: 'b3', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B3', field: 'b3', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+        ]
+      },
+      {
+        label: 'Deposit\nGrowth Rate',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: 'New', code: 'B4', field: 'b4', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B4', field: 'b4', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: 'New', code: 'B5', field: 'b5', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B5', field: 'b5', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: 'New', code: 'B6', field: 'b6', ct: 'New customer', fmt: 'growth' },
+            { group: 'Old', code: 'B6', field: 'b6', ct: 'Old Customer', fmt: 'growth' },
+          ]},
+        ]
+      },
+    ]
+  },
+  {
+    section: 'III.\nKey\nBehavioral\nIndicators',
+    metrics: [
+      {
+        label: 'Avg Open\nPositions\n(This Week)',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: '—', code: 'C1', field: 'c1', ct: 'All customer', fmt: 'lot' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: '—', code: 'C2', field: 'c2', ct: 'All customer', fmt: 'lot' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: '—', code: 'C3', field: 'c3', ct: 'All customer', fmt: 'lot' },
+          ]},
+        ]
+      },
+      {
+        label: 'Avg Deposit\nAmount\n(This Week)',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: '—', code: 'C4', field: 'c4', ct: 'All customer', fmt: 'amount' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: '—', code: 'C5', field: 'c5', ct: 'All customer', fmt: 'amount' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: '—', code: 'C6', field: 'c6', ct: 'All customer', fmt: 'amount' },
+          ]},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+function fmtPeriod(p) {
+  const s = String(p);
+  return s.length === 8
+    ? s.slice(0,4) + '-' + s.slice(4,6) + '-' + s.slice(6,8)
+    : s;
+}
+
+function fmtVal(v, format) {
+  if (v === null || v === undefined) return { text: '—', cls: 'null' };
+  switch (format) {
+    case 'pct':
+      return { text: (v * 100).toFixed(1) + '%', cls: 'neu' };
+    case 'growth': {
+      const pct = (v * 100).toFixed(1);
+      return {
+        text: (v >= 0 ? '+' : '') + pct + '%',
+        cls: v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu',
+      };
+    }
+    case 'lot':
+      return { text: v.toFixed(2), cls: 'neu' };
+    case 'amount':
+      return {
+        text: Number(v).toLocaleString('id-ID', { maximumFractionDigits: 0 }),
+        cls: 'neu',
+      };
+    default:
+      return { text: String(v), cls: 'neu' };
+  }
+}
+
+function buildMap(data) {
+  const m = {};
+  data.forEach(r => { m[`${r.period}|${r.customer_type}`] = r; });
+  return m;
+}
+
+function getField(map, period, ct, field) {
+  const r = map[`${period}|${ct}`];
+  return r ? (r[field] ?? null) : null;
+}
+
+function td(cls, text, rowspan) {
+  const el = document.createElement('td');
+  el.className = cls;
+  if (text !== undefined) el.textContent = text;
+  if (rowspan > 1) el.rowSpan = rowspan;
+  return el;
+}
+
+// ─────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────
+function render(data, weeks) {
+  let periods = [...new Set(data.map(r => String(r.period)))].sort();
+  if (weeks > 0) periods = periods.slice(-weeks);
+
+  const latestPeriod = periods[periods.length - 1];
+  const map = buildMap(data);
+
+  // Inject period headers
+  const theadRow = document.getElementById('theadRow');
+  // Remove old period headers (keep first 5)
+  while (theadRow.children.length > 5) theadRow.removeChild(theadRow.lastChild);
+  periods.forEach(p => {
+    const th = document.createElement('th');
+    th.textContent = fmtPeriod(p);
+    theadRow.appendChild(th);
+  });
+
+  // Update last updated
+  document.getElementById('lastUpdated').textContent =
+    `Last updated: ${fmtPeriod(latestPeriod)}`;
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  TABLE_DEF.forEach((section, si) => {
+    const sectionSpan = section.metrics.reduce(
+      (a, m) => a + m.comparisons.reduce((b, c) => b + c.rows.length, 0), 0);
+
+    section.metrics.forEach((metric, mi) => {
+      const metricSpan = metric.comparisons.reduce((a, c) => a + c.rows.length, 0);
+
+      metric.comparisons.forEach((comp, ci) => {
+        comp.rows.forEach((rowDef, ri) => {
+          const tr = document.createElement('tr');
+
+          // Section separator line at first row of each new section
+          if (si > 0 && mi === 0 && ci === 0 && ri === 0) tr.classList.add('sep-top');
+          // Metric divider
+          if (mi > 0 && ci === 0 && ri === 0) tr.classList.add('metric-top');
+
+          // Section cell (rowspan = full section)
+          if (mi === 0 && ci === 0 && ri === 0)
+            tr.appendChild(td('c-section', section.section, sectionSpan));
+
+          // Metric cell (rowspan = full metric)
+          if (ci === 0 && ri === 0)
+            tr.appendChild(td('c-metric', metric.label, metricSpan));
+
+          // Comparison cell (rowspan = rows in comparison)
+          if (ri === 0)
+            tr.appendChild(td('c-comp', comp.label, comp.rows.length));
+
+          tr.appendChild(td('c-group', rowDef.group));
+
+          // Value cells
+          periods.forEach(p => {
+            const v = getField(map, p, rowDef.ct, rowDef.field);
+            const { text } = fmtVal(v, rowDef.fmt);
+            const cell = td('val', text);
+            tr.appendChild(cell);
+          });
+
+          tbody.appendChild(tr);
+        });
+      });
+    });
+  });
+
+  document.getElementById('status').style.display = 'none';
+  document.getElementById('rebateTable').style.display = '';
+}
+
+// ─────────────────────────────────────────────
+// Click table structure
+// ─────────────────────────────────────────────
+const CLICK_TABLE_DEF = [
+  {
+    section: 'I.\nRetention\nRate',
+    metrics: [
+      {
+        label: 'Trading\nRetention Rate',
+        comparisons: [
+          { label: 'Task-Assigned Group', rows: [
+            { group: 'New', code: 'a1', ct: 'New customer' },
+            { group: 'Old', code: 'a1', ct: 'Old Customer' },
+          ]},
+          { label: 'Non-Task Group', rows: [
+            { group: 'New', code: 'a2', ct: 'New customer' },
+            { group: 'Old', code: 'a2', ct: 'Old Customer' },
+          ]},
+        ]
+      },
+      {
+        label: 'Deposit\nRetention Rate',
+        comparisons: [
+          { label: 'Task-Assigned Group', rows: [
+            { group: 'New', code: 'a3', ct: 'New customer' },
+            { group: 'Old', code: 'a3', ct: 'Old Customer' },
+          ]},
+          { label: 'Non-Task Group', rows: [
+            { group: 'New', code: 'a4', ct: 'New customer' },
+            { group: 'Old', code: 'a4', ct: 'Old Customer' },
+          ]},
+        ]
+      },
+    ]
+  },
+  {
+    section: 'II.\nGrowth\nRate',
+    metrics: [
+      {
+        label: 'Trading\nGrowth Rate',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: 'New', code: 'b1', ct: 'New customer' },
+            { group: 'Old', code: 'b1', ct: 'Old Customer' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: 'New', code: 'b2', ct: 'New customer' },
+            { group: 'Old', code: 'b2', ct: 'Old Customer' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: 'New', code: 'b3', ct: 'New customer' },
+            { group: 'Old', code: 'b3', ct: 'Old Customer' },
+          ]},
+        ]
+      },
+      {
+        label: 'Deposit\nGrowth Rate',
+        comparisons: [
+          { label: 'Non-Task LW → Task TW', rows: [
+            { group: 'New', code: 'b4', ct: 'New customer' },
+            { group: 'Old', code: 'b4', ct: 'Old Customer' },
+          ]},
+          { label: 'Task-Completed Group', rows: [
+            { group: 'New', code: 'b5', ct: 'New customer' },
+            { group: 'Old', code: 'b5', ct: 'Old Customer' },
+          ]},
+          { label: 'Task-Uncompleted Group', rows: [
+            { group: 'New', code: 'b6', ct: 'New customer' },
+            { group: 'Old', code: 'b6', ct: 'Old Customer' },
+          ]},
+        ]
+      },
+    ]
+  },
+];
+
+function renderClick(data, weeks) {
+  let periods = [...new Set(data.map(r => String(r.period)))].sort();
+  if (weeks > 0) periods = periods.slice(-weeks);
+
+  const map = buildMap(data);
+
+  // Period header row (colspan=3 each)
+  const periodRow = document.getElementById('clickTheadPeriod');
+  while (periodRow.children.length > 4) periodRow.removeChild(periodRow.lastChild);
+  periods.forEach(p => {
+    const th = document.createElement('th');
+    th.textContent = fmtPeriod(p);
+    th.colSpan = 3;
+    th.classList.add('sub-period');
+    periodRow.appendChild(th);
+  });
+
+  // Sub-header row (Click Rate | Clickers | Clicks per period)
+  const subRow = document.getElementById('clickTheadSub');
+  subRow.innerHTML = '';
+  periods.forEach(() => {
+    ['Click Rate', 'Clickers', 'Clicks'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      th.classList.add('sub-metric');
+      subRow.appendChild(th);
+    });
+  });
+
+  const tbody = document.getElementById('clickTableBody');
+  tbody.innerHTML = '';
+
+  CLICK_TABLE_DEF.forEach((section, si) => {
+    const sectionSpan = section.metrics.reduce(
+      (a, m) => a + m.comparisons.reduce((b, c) => b + c.rows.length, 0), 0);
+
+    section.metrics.forEach((metric, mi) => {
+      const metricSpan = metric.comparisons.reduce((a, c) => a + c.rows.length, 0);
+
+      metric.comparisons.forEach((comp, ci) => {
+        comp.rows.forEach((rowDef, ri) => {
+          const tr = document.createElement('tr');
+          if (si > 0 && mi === 0 && ci === 0 && ri === 0) tr.classList.add('sep-top');
+          if (mi > 0 && ci === 0 && ri === 0) tr.classList.add('metric-top');
+
+          if (mi === 0 && ci === 0 && ri === 0)
+            tr.appendChild(td('c-section', section.section, sectionSpan));
+          if (ci === 0 && ri === 0)
+            tr.appendChild(td('c-metric', metric.label, metricSpan));
+          if (ri === 0)
+            tr.appendChild(td('c-comp', comp.label, comp.rows.length));
+          tr.appendChild(td('c-group', rowDef.group));
+
+          periods.forEach(p => {
+            const rate     = getField(map, p, rowDef.ct, `${rowDef.code}_click_rate`);
+            const clickers = getField(map, p, rowDef.ct, `${rowDef.code}_clickers`);
+            const clicks   = getField(map, p, rowDef.ct, `${rowDef.code}_clicks`);
+
+            const { text: rateText } = fmtVal(rate, 'pct');
+            tr.appendChild(td('val click-rate', rateText));
+            tr.appendChild(td('val clickers',   clickers != null ? String(clickers) : '—'));
+            tr.appendChild(td('val clicks',      clicks   != null ? String(clicks)   : '—'));
+          });
+
+          tbody.appendChild(tr);
+        });
+      });
+    });
+  });
+
+  document.getElementById('statusClick').style.display = 'none';
+  document.getElementById('clickTable').style.display = '';
+}
+
+// ─────────────────────────────────────────────
+// Load & init
+// ─────────────────────────────────────────────
+let allData = [];
+let allClickData = [];
+
+async function loadData() {
+  const weeks = +document.getElementById('weeksSelect').value;
+  try {
+    const [res1, res2] = await Promise.all([
+      fetch('data/data_raw.json'),
+      fetch('data/data_raw_click.json'),
+    ]);
+    if (!res1.ok) throw new Error(`data_raw: HTTP ${res1.status}`);
+    if (!res2.ok) throw new Error(`data_raw_click: HTTP ${res2.status}`);
+    allData      = await res1.json();
+    allClickData = await res2.json();
+    render(allData, weeks);
+    renderClick(allClickData, weeks);
+    document.getElementById('lastUpdated').textContent =
+      `Last updated: ${fmtPeriod([...new Set(allData.map(r => String(r.period)))].sort().pop())}`;
+  } catch (e) {
+    document.getElementById('status').textContent = 'Failed to load data: ' + e.message;
+    document.getElementById('statusClick').textContent = 'Failed to load data: ' + e.message;
+  }
+}
+
+document.getElementById('weeksSelect').addEventListener('change', function() {
+  const weeks = +this.value;
+  if (allData.length)      render(allData, weeks);
+  if (allClickData.length) renderClick(allClickData, weeks);
+});
+
+loadData();
+</script>
+</body>
+</html>
