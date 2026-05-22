@@ -162,9 +162,9 @@
     }
 
     /* Sticky structure columns */
-    thead th:nth-child(1) { position: sticky; left: 0;    z-index: 30; min-width: 120px; text-align: left; padding-left: 16px; }
-    thead th:nth-child(2) { position: sticky; left: 120px; z-index: 30; min-width: 150px; text-align: left; }
-    thead th:nth-child(3) { position: sticky; left: 270px; z-index: 30; min-width: 190px; text-align: left; }
+    thead th:nth-child(1) { position: sticky; left: 0;    z-index: 30; min-width: 120px; }
+    thead th:nth-child(2) { position: sticky; left: 120px; z-index: 30; min-width: 150px; }
+    thead th:nth-child(3) { position: sticky; left: 270px; z-index: 30; min-width: 190px; }
     thead th:nth-child(4) { position: sticky; left: 460px; z-index: 30; min-width: 72px; }
 
     /* ── Body cells ── */
@@ -289,7 +289,8 @@
       position: sticky;
       left: 0;
       z-index: 10;
-      min-width: 140px;
+      min-width: 110px;
+      width: 110px;
       padding-left: 16px;
       border-right: 2px solid var(--gold) !important;
     }
@@ -299,9 +300,10 @@
       font-weight: 500;
       color: var(--muted);
       position: sticky;
-      left: 140px;
+      left: 110px;
       z-index: 10;
-      min-width: 160px;
+      min-width: 170px;
+      width: 170px;
       border-right: 2px solid var(--border) !important;
     }
     #tgTable thead th.sub-metric {
@@ -385,8 +387,8 @@
     <table id="tgTable" style="display:none">
       <thead>
         <tr id="tgTheadPeriod">
-          <th rowspan="2" style="min-width:140px;text-align:left;position:sticky;left:0;z-index:30">Task Group</th>
-          <th rowspan="2" style="min-width:160px;position:sticky;left:140px;z-index:30">Group</th>
+          <th rowspan="2" style="min-width:110px;width:110px;position:sticky;left:0;z-index:30">Task Group</th>
+          <th rowspan="2" style="min-width:170px;width:170px;position:sticky;left:110px;z-index:30">Group</th>
         </tr>
         <tr id="tgTheadSub"></tr>
       </thead>

@@ -434,3 +434,29 @@ left join a73 on a13.period = a73.period and a13.customer_type = a73.customer_ty
 left join a83 on a13.period = a83.period and a13.customer_type = a83.customer_type
 order by 1 desc, 2
 "
+
+
+### Task_Group_Click_Detail
+"with a as
+    (select client_id, group_name,min(start_date) start_date, max(end_date) end_date, award_period
+    from rebate_user_task_detail
+    where award_period >= '20260509'
+    group by all)
+, b as
+    (select *,
+        (select min(to_timestamp(nullif(first_deposit_time, 0)/1000)) from crm_customer_base where client_id = a.client_id) first_deposit_time,
+        (select count(*) from smart_reward_client_event where user_id = a.client_id and week_group = award_period) click_c
+    from a)
+
+select award_period, group_name, 
+
+    count(distinct case when first_deposit_time between start_date and end_date then client_id end) active_this_week,
+    count(distinct case when first_deposit_time between start_date and end_date and click_c > 0 then client_id end) active_click_this_week_user,
+    sum(case when first_deposit_time between start_date and end_date then click_c end) active_click_this_week_count,
+    
+    count(distinct case when first_deposit_time not between start_date and end_date then client_id end) non_active_this_week,
+    count(distinct case when first_deposit_time not between start_date and end_date and click_c > 0 then client_id end) non_active_click_this_week_user,
+    sum(case when first_deposit_time not between start_date and end_date then click_c end) non_active_click_this_week_count,
+from b
+group by all
+order by 1,2"
